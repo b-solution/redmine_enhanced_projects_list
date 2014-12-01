@@ -15,4 +15,5 @@ Redmine::Plugin.register :redmine_enhanced_projects_list do
 end
 Rails.application.config.to_prepare do
   ProjectsController.send(:include, Patches::ProjectsControllerPatch)
+
 end

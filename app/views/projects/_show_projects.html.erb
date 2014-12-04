@@ -1,33 +1,71 @@
 <div class="autoscroll">
-<table class="list">
+  <table id="myTable" class="tablesorter list">
   <thead>
     <tr>
-      <th>identifier</th>
-      <% Project.column_names.select{|col| @settings[col.to_sym] }.each do |column| %>
-              <th> <%= l("field_#{column}".to_sym) %></th>
-      <% end %>
-      <% CustomField.where(type: "ProjectCustomField").select{|col| @settings[col.name.to_sym] }.each do |cf| %>
-          <th>  <%= cf.name %> </th>
-      <% end  %>
+      <th> <%= l("field_identifier".to_sym) %></th>
+      <% if @settings.present? %>
+          <% Project.column_names.select{|col| @settings[col.to_sym] and col!= "identifier" }.each do |column| %>
+                  <th> <%= l("field_#{column}".to_sym) %></th>
+          <% end %>
+          <% CustomField.where(:type=> "ProjectCustomField").order("name ASC").select{|col| @settings[col.name.to_sym] }.each do |cf| %>
+              <th>  <%= cf.name %> </th>
+          <% end  %>
+       <% end %>
+      <th></th>
+      <th class="hide-when-print"></th>
     </tr>
   </thead>
   <tbody>
   <% project_tree(@projects) do |project, level| %>
       <tr class="<%= cycle("odd", "even") %> <%= project.css_classes %> <%= level > 0 ? "idnt idnt-#{level}" : nil %>">
-        <td class="name"><span><%= link_to_project_settings(project, {}, :title => project.short_description) %></span></td>
-        <% Project.column_names.select{|col| @settings[col.to_sym] }.each do |column| %>
-            <td> <%= project[column.to_sym]%></td>
+        <td class="name"><span><%= link_to project.identifier, project_path(project) %></span></td>
+        <% if @settings.present? %>
+        <% Project.column_names.select{|col| @settings[col.to_sym] and col!= "identifier" }.each do |column| %>
+            <td> <%= value =project[column.to_sym]
+               if value.is_a?(Date)
+                     format_date(value)
+                   elsif value.is_a?(Time)
+                     format_time(value)
+                   else
+                     "#{value}"
+                   end
+               %></td>
         <% end %>
-
-        <% project.visible_custom_field_values.select{|coll| @settings[coll.custom_field.name.to_sym] }.each do |custom_value| %>
-            <td>
-              <% unless custom_value.value.blank? %>
-                  <%= h  format_object(custom_value) %>
-              <% end %>
-            </td>
-        <% end %>
+            <% CustomField.where(:type=> "ProjectCustomField").order("name ASC").select{|col| @settings[col.name.to_sym] }.each do |cf| %>
+                <% project.visible_custom_field_values.select{|coll| coll.custom_field.name == cf.name }.each do |custom_value| %>
+                    <td>
+                      <% unless custom_value.value.blank? %>
+                          <%= h  format_object(custom_value) %>
+                      <% end %>
+                    </td>
+                <% end %>
+                <% end %>
+       <% end %>
+        <td>
+          <% if User.current.member_of?(project)%>
+             <span class="my-project"></span>
+          <% end %>
+        </td>
+        <td class="hide-when-print">
+          <% if (User.current.member_of?(project) and User.current.allowed_to?({:controller => :projects, :action => :copy}, project, :global => false)) or User.current.admin? %>
+                  <%= link_to(l(:button_copy), { :controller => 'projects', :action => 'copy', :id => project }, :class => 'icon icon-copy') %>
+          <% end %>
+        </td>
       </tr>
   <% end %>
   </tbody>
 </table>
 </div>
+
+<%= javascript_include_tag 'jquery.tablesorter.min.js', :plugin=>"redmine_enhanced_projects_list" %>
+<script>
+    $(document).ready(function()
+    {
+        $("#myTable").tablesorter();
+        <% if @settings[:sorting_projects_order] == 'true' %>
+            $.fn.reverse = [].reverse;
+            $("#myTable > tbody > tr").reverse().appendTo("#myTable > tbody");
+        <% end %>
+    }
+    );
+</script>

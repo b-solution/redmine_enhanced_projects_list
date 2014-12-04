@@ -3,7 +3,7 @@ Redmine::Plugin.register :redmine_enhanced_projects_list do
   author 'Bilel KEDIDI'
   description 'This is a plugin for Redmine'
   version '0.0.1'
-  url 'https://github.com/Atrasoftware/redmine-enhanced-projects-list'
+  url 'https://github.com/bilel-kedidi/redmine_enhanced_projects_list'
 
   permission :copy, :projects => :copy
   settings :default => {
